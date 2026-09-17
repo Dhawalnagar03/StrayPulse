@@ -1,0 +1,62 @@
+version: "3.9"
+
+services:
+  # ── MongoDB (local dev, swap for Atlas in production) ──────────────────────
+  mongodb:
+    image: mongo:7.0
+    container_name: straypulse_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: straypulse
+      MONGO_INITDB_ROOT_PASSWORD: straypulse_dev
+      MONGO_INITDB_DATABASE: straypulse
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - straypulse_net
+
+  # ── FastAPI Backend ─────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: straypulse_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - MONGODB_URI=mongodb://straypulse:straypulse_dev@mongodb:27017/straypulse?authSource=admin
+    volumes:
+      - ./backend:/app
+      - ./ml/models:/ml/models
+      - uploads_data:/app/uploads
+    depends_on:
+      - mongodb
+    networks:
+      - straypulse_net
+
+  # ── React Web Dashboard ─────────────────────────────────────────────────────
+  web:
+    build:
+      context: ./web/react_dashboard
+      dockerfile: Dockerfile
+    container_name: straypulse_web
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    env_file:
+      - .env
+    networks:
+      - straypulse_net
+
+volumes:
+  mongodb_data:
+  uploads_data:
+
+networks:
+  straypulse_net:
+    driver: bridge

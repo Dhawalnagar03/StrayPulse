@@ -1,0 +1,38 @@
+{
+  "comparison": [
+    {
+      "model_name": "frequency_baseline",
+      "accuracy": 0.06844106463878327,
+      "precision": 0.0011600180447251401,
+      "recall": 0.01694915254237288,
+      "f1_score": 0.002171421678026419,
+      "training_samples": 1050
+    },
+    {
+      "model_name": "knn",
+      "accuracy": 0.7452471482889734,
+      "precision": 0.592735696392817,
+      "recall": 0.5779110704110704,
+      "f1_score": 0.5490329917375952,
+      "training_samples": 1050
+    },
+    {
+      "model_name": "random_forest",
+      "accuracy": 0.8593155893536122,
+      "precision": 0.7316476218795576,
+      "recall": 0.762550443906376,
+      "f1_score": 0.726716177767372,
+      "training_samples": 1050
+    },
+    {
+      "model_name": "xgboost",
+      "accuracy": 0.8631178707224335,
+      "precision": 0.6820377214221995,
+      "recall": 0.6852905569007264,
+      "f1_score": 0.6701783837420405,
+      "training_samples": 1050
+    }
+  ],
+  "best_model": "random_forest",
+  "evaluated_at": "2026-09-10T07:17:30.582693"
+}

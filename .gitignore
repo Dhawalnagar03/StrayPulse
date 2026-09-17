@@ -1,0 +1,44 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Backend uploads
+backend/uploads/*
+
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+
+# Android
+.gradle/
+android/.gradle/
+android/local.properties
+**/android_backup/
+
+# Flutter Android generated files
+mobile/flutter_app/android/.gradle/
+mobile/flutter_app/android/local.properties
+
+# Node / React
+node_modules/
+dist/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Secrets / signing
+*.jks
+*.keystore
+google-services.json
