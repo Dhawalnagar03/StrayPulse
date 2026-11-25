@@ -6,6 +6,7 @@ import {
   AlertCircle, Upload, Info
 } from 'lucide-react';
 import { animalsApi } from '../lib/api';
+import { addNotification } from '../lib/notifications';
 import toast from 'react-hot-toast';
 
 const MAX_FILE_SIZE_MB = 10;
@@ -68,8 +69,14 @@ const RegisterAnimalPage: FC = () => {
 
   const captureGPS = () => {
     if (!navigator.geolocation) {
-      toast.error('Geolocation is not supported by your browser.');
+      const msg = 'Geolocation is not supported by your browser.';
       setGpsStatus('Geolocation not supported');
+      addNotification({
+        title: 'GPS unavailable',
+        text: msg,
+        category: 'GPS',
+        dedupeKey: 'gps-unsupported',
+      });
       return;
     }
 
@@ -90,7 +97,13 @@ const RegisterAnimalPage: FC = () => {
         }));
         setGpsLoading(false);
         setGpsStatus(`Location captured ✓ (Accuracy: ±${acc || '10'}m)`);
-        toast.success('GPS location captured successfully!');
+        addNotification({
+          title: 'GPS captured',
+          text: `Coordinates saved: ${lat}, ${lng}${acc ? ` (±${acc}m)` : ''}`,
+          category: 'GPS',
+          dedupeKey: `gps-capture-success:${lat}:${lng}`,
+          dedupeWindowMs: 60_000,
+        });
       },
       (err) => {
         setGpsLoading(false);
@@ -103,7 +116,12 @@ const RegisterAnimalPage: FC = () => {
           msg = 'GPS request timed out. Please enter coordinates manually.';
         }
         setGpsStatus(msg);
-        toast.error(msg);
+        addNotification({
+          title: 'GPS capture warning',
+          text: msg,
+          category: 'GPS',
+          dedupeKey: 'gps-capture-warning',
+        });
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
@@ -176,39 +194,35 @@ const RegisterAnimalPage: FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto animate-fade-in space-y-6">
-      {/* Top Header */}
-      <div>
-        <button onClick={() => navigate('/animals')} className="btn-ghost text-gray-400 mb-3 -ml-2">
-          <ArrowLeft className="w-4 h-4" /> Back to Animals
+    <div className="mx-auto w-full max-w-5xl animate-fade-in px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mb-6">
+        <button onClick={() => navigate('/animals')} className="btn-ghost mb-3 -ml-2 text-slate-500 hover:text-slate-700">
+          <ArrowLeft className="h-4 w-4" /> Back to Animals
         </button>
-        <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-          <PawPrint className="w-7 h-7 text-primary-400" />
+        <h1 className="flex items-center gap-3 text-3xl font-bold text-[#081A1A]">
+          <PawPrint className="h-7 w-7 text-[#2d8a6a]" />
           Register New Animal
         </h1>
-        <p className="text-gray-400 text-sm mt-1">
+        <p className="mt-2 text-sm text-slate-600">
           Add a new stray animal to StrayPulse to begin tracking sightings and predicting movement.
         </p>
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl px-4 py-3">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+        <div className="mb-6 flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Info Card */}
-        <div className="card space-y-4">
-          <h2 className="text-base font-semibold text-white flex items-center gap-2 border-b border-white/[0.06] pb-3">
-            <PawPrint className="w-4 h-4 text-primary-400" />
+      <form onSubmit={handleSubmit} className="space-y-6 overflow-x-hidden">
+        <div className="card space-y-5 p-5 sm:p-6">
+          <h2 className="border-b border-[#efe5dc] pb-3 text-base font-semibold text-[#081A1A]">
             Basic Information
           </h2>
 
-          {/* Animal Type Selection */}
           <div>
-            <label className="label">Animal Type *</label>
+            <label className="mb-2 block text-sm font-medium text-slate-700">Animal Type *</label>
             <div className="grid grid-cols-3 gap-3">
               {[
                 { type: 'Dog', icon: '🐕' },
@@ -219,10 +233,10 @@ const RegisterAnimalPage: FC = () => {
                   type="button"
                   key={type}
                   onClick={() => setForm((prev) => ({ ...prev, animal_type: type }))}
-                  className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-sm font-medium transition-all ${
+                  className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-sm font-medium transition-all duration-200 ${
                     form.animal_type === type
-                      ? 'bg-primary-500/15 border-primary-500 text-primary-300 shadow-glow-green'
-                      : 'bg-dark-700/50 border-white/[0.08] text-gray-300 hover:border-white/20'
+                      ? 'border-[#86c9a2] bg-[#edf8f2] text-[#0f5d3a] shadow-[0_8px_18px_rgba(63,130,98,0.12)]'
+                      : 'border-[#e7dfd8] bg-[#f8faf8] text-slate-700 hover:border-[#d6dfe1] hover:bg-[#f3f6f5]'
                   }`}
                 >
                   <span className="text-xl">{icon}</span>
@@ -232,7 +246,7 @@ const RegisterAnimalPage: FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <label className="label">Animal Name / Label (Optional)</label>
               <input
@@ -242,7 +256,7 @@ const RegisterAnimalPage: FC = () => {
                 className="input"
                 placeholder="e.g. Bruno, Whitey, Spot"
               />
-              <p className="text-[11px] text-gray-500 mt-1">Name used by local feeders or volunteers</p>
+              <p className="mt-1 text-[11px] text-slate-500">Name used by local feeders or volunteers</p>
             </div>
 
             <div>
@@ -255,7 +269,7 @@ const RegisterAnimalPage: FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div>
               <label className="label">Approximate Age</label>
               <input
@@ -295,25 +309,24 @@ const RegisterAnimalPage: FC = () => {
               value={form.distinctive_features}
               onChange={handleChange}
               rows={2}
-              className="input resize-none"
+              className="input min-h-[88px] resize-none"
               placeholder="e.g. White patch on chest, notched right ear, limps slightly"
             />
           </div>
         </div>
 
-        {/* Photo Upload Card */}
-        <div className="card space-y-4">
-          <h2 className="text-base font-semibold text-white flex items-center gap-2 border-b border-white/[0.06] pb-3">
-            <Camera className="w-4 h-4 text-primary-400" />
+        <div className="card space-y-5 overflow-hidden p-5 sm:p-6">
+          <h2 className="flex items-center gap-2 border-b border-[#efe5dc] pb-3 text-base font-semibold text-[#081A1A]">
+            <Camera className="h-4 w-4 text-[#2d8a6a]" />
             Animal Photo *
           </h2>
 
-          <label className="block cursor-pointer">
+          <label className="block w-full cursor-pointer">
             <div
-              className={`border-2 border-dashed rounded-xl p-6 text-center transition-all ${
+              className={`w-full overflow-hidden rounded-xl border-2 border-dashed p-4 text-center transition-all sm:p-6 ${
                 photoPreview
-                  ? 'border-primary-500/50 bg-primary-500/[0.02]'
-                  : 'border-white/[0.1] hover:border-primary-500/40 bg-dark-700/30'
+                  ? 'border-[#86c9a2] bg-[#f3fbf6]'
+                  : 'border-[#e7dfd8] bg-[#f8faf8] hover:border-[#b9d9c4]'
               }`}
             >
               {photoPreview ? (
@@ -321,15 +334,15 @@ const RegisterAnimalPage: FC = () => {
                   <img
                     src={photoPreview}
                     alt="Preview"
-                    className="max-h-56 mx-auto rounded-xl object-contain border border-white/10 shadow-lg"
+                    className="mx-auto max-h-56 max-w-full rounded-xl border border-[#e7dfd8] object-contain shadow-sm"
                   />
-                  <p className="text-xs text-primary-400 font-medium">Click or drag to replace photo</p>
+                  <p className="text-xs font-medium text-[#0f5d3a]">Click or tap to replace photo</p>
                 </div>
               ) : (
                 <div className="py-4">
-                  <Upload className="w-10 h-10 text-primary-400 mx-auto mb-2 opacity-80" />
-                  <p className="text-sm font-medium text-white">Click to upload photo</p>
-                  <p className="text-xs text-gray-500 mt-1">Supported formats: JPG, PNG, WEBP (Max {MAX_FILE_SIZE_MB}MB)</p>
+                  <Upload className="mx-auto mb-2 h-10 w-10 text-[#2d8a6a] opacity-80" />
+                  <p className="text-sm font-medium text-slate-800">Click to upload photo</p>
+                  <p className="mt-1 text-xs text-slate-500">Supported formats: JPG, PNG, WEBP (Max {MAX_FILE_SIZE_MB}MB)</p>
                 </div>
               )}
             </div>
@@ -342,18 +355,17 @@ const RegisterAnimalPage: FC = () => {
             />
           </label>
 
-          {photoError && <p className="text-xs text-red-400">{photoError}</p>}
+          {photoError && <p className="text-xs text-red-600">{photoError}</p>}
         </div>
 
-        {/* Initial Location Card */}
-        <div className="card space-y-4">
-          <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
-            <h2 className="text-base font-semibold text-white flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-primary-400" />
+        <div className="card space-y-5 p-5 sm:p-6">
+          <div className="flex items-center justify-between gap-3 border-b border-[#efe5dc] pb-3">
+            <h2 className="flex items-center gap-2 text-base font-semibold text-[#081A1A]">
+              <MapPin className="h-4 w-4 text-[#2d8a6a]" />
               Initial / Current Location
             </h2>
-            <span className="text-xs text-gray-400 flex items-center gap-1">
-              <Info className="w-3.5 h-3.5" /> Optional / Recommended
+            <span className="flex items-center gap-1 text-[11px] text-slate-500">
+              <Info className="h-3.5 w-3.5" /> Optional / Recommended
             </span>
           </div>
 
@@ -365,31 +377,31 @@ const RegisterAnimalPage: FC = () => {
             className="btn-secondary w-full justify-center py-2.5"
           >
             {gpsLoading ? (
-              <span className="spinner w-4 h-4" />
+              <span className="spinner h-4 w-4" />
             ) : (
-              <MapPin className="w-4 h-4 text-primary-400" />
+              <MapPin className="h-4 w-4 text-[#2d8a6a]" />
             )}
             {gpsLoading ? 'Acquiring GPS Signal…' : 'Capture GPS Location'}
           </button>
 
           {gpsStatus && (
             <div
-              className={`text-xs p-3 rounded-xl flex items-center gap-2 ${
+              className={`flex items-center gap-2 rounded-xl p-3 text-xs ${
                 gpsStatus.includes('✓')
-                  ? 'bg-primary-500/10 border border-primary-500/30 text-primary-300'
-                  : 'bg-orange-500/10 border border-orange-500/30 text-orange-400'
+                  ? 'border border-[#9ad3b6] bg-[#edf8f2] text-[#0f5d3a]'
+                  : 'border border-[#f2c18d] bg-[#fff7ef] text-[#9d5a21]'
               }`}
             >
               {gpsStatus.includes('✓') ? (
-                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
               ) : (
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
               )}
               {gpsStatus}
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <label className="label">Latitude</label>
               <input
@@ -413,25 +425,21 @@ const RegisterAnimalPage: FC = () => {
           </div>
         </div>
 
-        {/* Additional Notes Card */}
-        <div className="card space-y-4">
-          <h2 className="text-base font-semibold text-white border-b border-white/[0.06] pb-3">
+        <div className="card space-y-5 p-5 sm:p-6">
+          <h2 className="border-b border-[#efe5dc] pb-3 text-base font-semibold text-[#081A1A]">
             Notes & Remarks
           </h2>
-          <div>
-            <textarea
-              name="notes"
-              value={form.notes}
-              onChange={handleChange}
-              rows={3}
-              className="input resize-none"
-              placeholder="Enter any additional observations, feeding routines, vaccination status..."
-            />
-          </div>
+          <textarea
+            name="notes"
+            value={form.notes}
+            onChange={handleChange}
+            rows={3}
+            className="input min-h-[110px] resize-none"
+            placeholder="Enter any additional observations, feeding routines, vaccination status..."
+          />
         </div>
 
-        {/* Submit Actions */}
-        <div className="flex gap-4">
+        <div className="flex gap-4 pb-2">
           <button
             type="button"
             onClick={() => navigate('/animals')}
@@ -447,9 +455,9 @@ const RegisterAnimalPage: FC = () => {
             className="btn-primary flex-1 justify-center py-3 text-base"
           >
             {loading ? (
-              <span className="spinner w-4 h-4 border border-white/30 border-t-white" />
+              <span className="spinner h-4 w-4 border border-white/30 border-t-white" />
             ) : (
-              <CheckCircle2 className="w-4 h-4" />
+              <CheckCircle2 className="h-4 w-4" />
             )}
             {loading ? 'Saving animal...' : 'Register Animal'}
           </button>

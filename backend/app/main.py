@@ -4,8 +4,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.security import OAuth2PasswordBearer
+from fastapi.openapi.utils import get_openapi
 from app.config import settings
 from app.database.connection import connect_to_mongo, close_mongo_connection
+from app.database.seed import ensure_demo_users
 from app.api.routes import auth, animals, sightings, predictions, locations, admin, ml
 
 logging.basicConfig(
@@ -19,7 +22,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # Startup
     await connect_to_mongo()
-    await _seed_admin_if_missing()
+    await ensure_demo_users()
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
     logger.info("StrayPulse API started.")
     yield
@@ -40,10 +43,45 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# OAuth2 security scheme for Swagger UI
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+
+    security_scheme = {
+    "type": "http",
+    "scheme": "bearer",
+    "bearerFormat": "JWT"
+}
+
+    openapi_schema.setdefault("components", {}).setdefault(
+        "securitySchemes", {}
+    )["OAuth2PasswordBearer"] = security_scheme
+
+    openapi_schema.setdefault("security", []).append(
+        {"OAuth2PasswordBearer": []}
+    )
+
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
+
 # CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -85,27 +123,3 @@ async def health():
         db_status = "disconnected"
     return {"status": "ok", "database": db_status}
 
-
-async def _seed_admin_if_missing():
-    """Create default admin user on first run."""
-    from app.database.connection import get_database
-    from app.auth.jwt import hash_password
-    from datetime import datetime
-
-    db = get_database()
-    existing = await db.users.find_one({"email": settings.ADMIN_EMAIL})
-    if not existing:
-        await db.users.insert_one({
-            "name": "StrayPulse Admin",
-            "email": settings.ADMIN_EMAIL,
-            "phone": None,
-            "hashed_password": hash_password(settings.ADMIN_PASSWORD),
-            "role": "admin",
-            "is_active": True,
-            "is_verified": True,
-            "profile_photo": None,
-            "total_sightings": 0,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
-        })
-        logger.info(f"Admin user created: {settings.ADMIN_EMAIL}")

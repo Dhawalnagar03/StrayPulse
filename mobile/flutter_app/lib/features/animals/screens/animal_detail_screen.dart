@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/utils/ist_date.dart';
 
 class AnimalDetailScreen extends StatefulWidget {
   final String animalId;
@@ -273,7 +274,7 @@ class _SightingTile extends StatelessWidget {
       ),
       const SizedBox(width: 12),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(sighting['timestamp']?.toString().substring(0, 16).replaceFirst('T', ' ') ?? '',
+        Text(formatDateTimeIst(sighting['timestamp']),
           style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500)),
         Text('${sighting['time_of_day']} · ${sighting['weather_condition'] ?? 'N/A'}',
           style: const TextStyle(color: AppTheme.textMuted, fontSize: 11)),

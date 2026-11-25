@@ -57,9 +57,18 @@ class _PredictionScreenState extends State<PredictionScreen> {
     return Scaffold(
       backgroundColor: AppTheme.bgPrimary,
       appBar: AppBar(
-        title: Text('AI Analytics — ${widget.animalId}'),
-        leading: IconButton(onPressed: () => context.pop(), icon: const Icon(Icons.arrow_back)),
-      ),
+  title: Text('AI Analytics — ${widget.animalId}'),
+  leading: IconButton(
+    onPressed: () {
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/home');
+      }
+    },
+    icon: const Icon(Icons.arrow_back),
+  ),
+),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(

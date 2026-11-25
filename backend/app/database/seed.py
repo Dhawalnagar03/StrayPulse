@@ -7,6 +7,7 @@ import asyncio
 import math
 import random
 from datetime import datetime, timedelta
+from app.config import settings
 from app.database.connection import connect_to_mongo, get_database
 from app.auth.jwt import hash_password
 from app.services.geo import lat_lng_to_zone_id
@@ -91,6 +92,50 @@ FEEDING_LOCATIONS = [
 ]
 
 WEATHER_CONDITIONS = ["Clear", "Clouds", "Mist", "Drizzle"]
+
+
+async def ensure_demo_users(db=None):
+    """Create default admin and citizen demo accounts only when they are missing."""
+    if db is None:
+        await connect_to_mongo()
+        db = get_database()
+
+    demo_users = [
+        {
+            "name": "StrayPulse Admin",
+            "email": settings.ADMIN_EMAIL,
+            "password": settings.ADMIN_PASSWORD,
+            "role": "admin",
+        },
+        {
+            "name": "Citizen Demo User",
+            "email": settings.CITIZEN_DEMO_EMAIL,
+            "password": settings.CITIZEN_DEMO_PASSWORD,
+            "role": "citizen",
+        },
+    ]
+
+    created = {"admin_email": settings.ADMIN_EMAIL, "citizen_email": settings.CITIZEN_DEMO_EMAIL}
+    for user in demo_users:
+        existing = await db.users.find_one({"email": user["email"]})
+        if existing:
+            continue
+
+        await db.users.insert_one({
+            "name": user["name"],
+            "email": user["email"],
+            "phone": None,
+            "hashed_password": hash_password(user["password"]),
+            "role": user["role"],
+            "is_active": True,
+            "is_verified": True,
+            "profile_photo": None,
+            "total_sightings": 0,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+        })
+
+    return created
 
 
 def _generate_sightings_for_pattern(animal: dict, count: int) -> list:
@@ -181,6 +226,7 @@ def _generate_sightings_for_pattern(animal: dict, count: int) -> list:
 async def seed():
     await connect_to_mongo()
     db = get_database()
+    await ensure_demo_users(db)
 
     print("🌱 Seeding StrayPulse demo data...")
 
@@ -287,6 +333,7 @@ async def seed():
     for a in DEMO_ANIMALS:
         print(f"   {a['animal_id']} — {a['name_label']} ({a['pattern']})")
     print(f"\n🔑 Admin login: {(await db.users.find_one({'role': 'admin'}))['email'] if await db.users.count_documents({'role': 'admin'}) > 0 else 'N/A'}")
+    print(f"🔑 Citizen demo login: {(await db.users.find_one({'role': 'citizen', 'email': settings.CITIZEN_DEMO_EMAIL}))['email'] if await db.users.count_documents({'role': 'citizen', 'email': settings.CITIZEN_DEMO_EMAIL}) > 0 else 'N/A'}")
 
 
 if __name__ == "__main__":

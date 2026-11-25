@@ -1,6 +1,6 @@
 // API Types for StrayPulse
 
-export type UserRole = 'citizen' | 'ngo' | 'admin';
+export type UserRole = 'admin' | 'citizen' | 'individual' | 'ngo' | 'rescuer' | 'volunteer' | 'feeder';
 
 export interface User {
   id: string;
@@ -8,6 +8,8 @@ export interface User {
   email: string;
   phone?: string;
   role: UserRole;
+  profile_type?: string;
+  organization_name?: string;
   is_active: boolean;
   total_sightings: number;
   created_at: string;

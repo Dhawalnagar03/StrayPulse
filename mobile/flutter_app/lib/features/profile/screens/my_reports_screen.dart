@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/utils/ist_date.dart';
 
 class MyReportsScreen extends StatefulWidget {
   const MyReportsScreen({super.key});
@@ -102,7 +103,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
-                                          s['timestamp']?.toString().substring(0, 16).replaceFirst('T', ' ') ?? '',
+                                          formatDateTimeIst(s['timestamp']),
                                           style: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
                                         ),
                                       ],

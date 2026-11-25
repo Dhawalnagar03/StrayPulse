@@ -1,10 +1,10 @@
 import { useState, type FC } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { PawPrint, Search, Filter, Plus, Eye, MapPin, Clock } from 'lucide-react';
+import { PawPrint, Search, Plus, MapPin, Clock } from 'lucide-react';
 import { animalsApi } from '../lib/api';
 import type { Animal } from '../types';
-import { format, parseISO } from 'date-fns';
+import { formatDateTimeIST } from '../lib/date';
 
 const statusColor = (status: string) => {
   switch (status) {
@@ -49,26 +49,25 @@ const AnimalsPage: FC = () => {
   const totalCount = countData?.count !== undefined ? countData.count : animals.length;
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Animals</h1>
-          <p className="text-gray-400 text-sm mt-0.5">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#dc2101]">Registry</p>
+          <h1 className="mt-1 text-3xl font-bold text-slate-900">Animals</h1>
+          <p className="mt-1 text-sm text-slate-500">
             {totalCount} registered {totalCount === 1 ? 'animal' : 'animals'}
-            {animals.some((a) => a.is_demo) && <span className="badge-orange ml-2">Demo Data</span>}
           </p>
         </div>
+
         <button id="btn-add-animal" onClick={() => navigate('/animals/new')} className="btn-primary">
-          <Plus className="w-4 h-4" />
+          <Plus className="h-4 w-4" />
           Register Animal
         </button>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+        <div className="relative min-w-[200px] flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             id="animal-search"
             value={search}
@@ -92,46 +91,44 @@ const AnimalsPage: FC = () => {
         </select>
       </div>
 
-      {/* Animals grid */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
+        <div className="card flex min-h-[240px] items-center justify-center">
           <div className="spinner" />
         </div>
       ) : animals.length === 0 ? (
-        <div className="text-center py-20">
-          <PawPrint className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-          <p className="text-gray-400 text-lg font-medium">No animals found</p>
-          <p className="text-gray-600 text-sm">Try adjusting your search or register a new animal</p>
+        <div className="card py-20 text-center">
+          <PawPrint className="mx-auto mb-3 h-12 w-12 text-slate-400" />
+          <p className="text-lg font-medium text-slate-900">No animals found</p>
+          <p className="mt-1 text-sm text-slate-500">Try adjusting your search or register a new animal</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {animals.map((animal) => (
             <div
               key={animal.animal_id}
               onClick={() => navigate(`/animals/${animal.animal_id}`)}
-              className="card-hover animate-slide-up"
+              className="card-hover p-4"
             >
-              {/* Top: photo + ID */}
-              <div className="flex items-start gap-4 mb-4">
-                <div className="w-16 h-16 rounded-xl bg-dark-700 border border-white/[0.08] flex items-center justify-center text-3xl flex-shrink-0 overflow-hidden shadow-inner">
+              <div className="mb-4 flex items-start gap-4">
+                <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-[#fff7f2] text-3xl shadow-sm">
                   {animal.primary_photo && !imgErrors[animal.animal_id] ? (
                     <img
                       src={animal.primary_photo}
                       alt={animal.animal_id}
-                      className="w-full h-full object-cover"
+                      className="h-full w-full object-cover"
                       onError={() => setImgErrors((prev) => ({ ...prev, [animal.animal_id]: true }))}
                     />
                   ) : (
                     typeIcon(animal.animal_type)
                   )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-bold text-white font-mono text-sm">{animal.animal_id}</p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-bold text-slate-900 font-mono">{animal.animal_id}</p>
                     {animal.is_demo && <span className="badge-orange text-[10px]">Demo</span>}
                   </div>
-                  <p className="text-gray-400 text-sm">{animal.name_label || animal.animal_type}</p>
-                  <div className="mt-1.5">
+                  <p className="mt-1 text-sm text-slate-500">{animal.name_label || animal.animal_type}</p>
+                  <div className="mt-2">
                     <span className={statusColor(animal.status)}>
                       {animal.status === 'Active' ? '🟢' : '⚫'} {animal.status}
                     </span>
@@ -139,32 +136,30 @@ const AnimalsPage: FC = () => {
                 </div>
               </div>
 
-              {/* Stats row */}
-              <div className="grid grid-cols-3 gap-2 mb-4">
-                <div className="bg-dark-700/50 rounded-lg p-2 text-center">
-                  <p className="text-xs text-gray-500">Sightings</p>
-                  <p className="text-sm font-bold text-white">{animal.total_sightings}</p>
+              <div className="mb-4 grid grid-cols-3 gap-2">
+                <div className="rounded-lg bg-slate-50 p-2 text-center">
+                  <p className="text-[11px] text-slate-500">Sightings</p>
+                  <p className="text-sm font-bold text-slate-900">{animal.total_sightings}</p>
                 </div>
-                <div className="bg-dark-700/50 rounded-lg p-2 text-center">
-                  <p className="text-xs text-gray-500">Type</p>
-                  <p className="text-sm font-bold text-white">{animal.animal_type}</p>
+                <div className="rounded-lg bg-slate-50 p-2 text-center">
+                  <p className="text-[11px] text-slate-500">Type</p>
+                  <p className="text-sm font-bold text-slate-900">{animal.animal_type}</p>
                 </div>
-                <div className="bg-dark-700/50 rounded-lg p-2 text-center">
-                  <p className="text-xs text-gray-500">Sex</p>
-                  <p className="text-sm font-bold text-white">{animal.sex}</p>
+                <div className="rounded-lg bg-slate-50 p-2 text-center">
+                  <p className="text-[11px] text-slate-500">Sex</p>
+                  <p className="text-sm font-bold text-slate-900">{animal.sex}</p>
                 </div>
               </div>
 
-              {/* Last seen */}
               {animal.last_seen_at && (
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <Clock className="w-3.5 h-3.5" />
-                  Last seen {format(parseISO(animal.last_seen_at), 'MMM d, h:mm a')}
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <Clock className="h-3.5 w-3.5" />
+                  Last seen {formatDateTimeIST(animal.last_seen_at)}
                 </div>
               )}
               {animal.most_common_area && (
-                <div className="flex items-center gap-2 text-xs text-gray-600 mt-1">
-                  <MapPin className="w-3.5 h-3.5" />
+                <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                  <MapPin className="h-3.5 w-3.5" />
                   Common: {animal.most_common_area}
                 </div>
               )}

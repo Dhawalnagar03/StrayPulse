@@ -7,11 +7,17 @@ interface Props {
   allowedRoles?: string[];
 }
 
+const normalizeAccessRole = (role?: string | null) => {
+  if (!role) return 'citizen';
+  if (['individual', 'rescuer', 'volunteer', 'feeder'].includes(role)) return 'citizen';
+  return role;
+};
+
 const ProtectedRoute: FC<Props> = ({ children, allowedRoles }) => {
   const { isAuthenticated, user } = useAuthStore();
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+  if (allowedRoles && user && !allowedRoles.includes(normalizeAccessRole(user.role))) {
     return <Navigate to="/dashboard" replace />;
   }
   return <>{children}</>;

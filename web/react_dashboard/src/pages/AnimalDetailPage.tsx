@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { animalsApi, sightingsApi, predictionsApi } from '../lib/api';
 import type { Animal, Sighting, Prediction, PredictionInsufficientData } from '../types';
-import { format, parseISO } from 'date-fns';
+import { formatDateIST, formatDateTimeIST, formatTimeIST } from '../lib/date';
 import toast from 'react-hot-toast';
 
 const MapComponent = lazy(() => import('../components/AnimalMap'));
@@ -123,20 +123,18 @@ const AnimalDetailPage: FC = () => {
   };
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in max-w-6xl mx-auto">
-      {/* Back + Header */}
+    <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-6">
       <div>
-        <button onClick={() => navigate('/animals')} className="btn-ghost text-gray-400 mb-4 -ml-2">
-          <ArrowLeft className="w-4 h-4" />Back to Animals
+        <button onClick={() => navigate('/animals')} className="btn-ghost -ml-2 mb-4 text-slate-600">
+          <ArrowLeft className="h-4 w-4" />Back to Animals
         </button>
-        <div className="flex items-start gap-5">
-          {/* Photo */}
-          <div className="w-24 h-24 rounded-2xl bg-dark-700 border border-white/[0.08] flex items-center justify-center text-5xl flex-shrink-0 overflow-hidden shadow-glow-green">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+          <div className="flex h-24 w-24 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[#e8dfd7] bg-[#f7f2ee] text-5xl shadow-[0_10px_25px_rgba(8,26,26,0.06)]">
             {animal.primary_photo && !imgError ? (
               <img
                 src={animal.primary_photo}
                 alt={animal.animal_id}
-                className="w-full h-full object-cover"
+                className="h-full w-full object-cover"
                 onError={() => setImgError(true)}
               />
             ) : (
@@ -144,10 +142,9 @@ const AnimalDetailPage: FC = () => {
             )}
           </div>
           <div className="flex-1">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-2xl font-bold text-white font-mono">{animal.animal_id}</h1>
-                {animal.is_demo && <span className="badge-orange">Demo Data</span>}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="font-mono text-2xl font-bold text-[#081A1A]">{animal.animal_id}</h1>
                 <span className={animal.status === 'Active' ? 'badge-green' : 'badge-gray'}>
                   {animal.status === 'Active' ? '🟢' : '⚫'} {animal.status}
                 </span>
@@ -156,25 +153,26 @@ const AnimalDetailPage: FC = () => {
                 <button
                   id="btn-edit-animal"
                   onClick={() => setIsEditOpen(true)}
-                  className="btn-secondary text-xs px-3 py-1.5"
+                  className="btn-secondary px-3 py-1.5 text-xs"
                 >
-                  <Edit3 className="w-3.5 h-3.5" /> Edit
+                  <Edit3 className="h-3.5 w-3.5" /> Edit
                 </button>
                 <button
                   id="btn-delete-animal"
                   onClick={() => setIsDeleteOpen(true)}
-                  className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-medium px-3 py-1.5 transition-colors flex items-center gap-1.5"
+                  className="flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-100"
                 >
-                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                  <Trash2 className="h-3.5 w-3.5" /> Delete
                 </button>
               </div>
             </div>
-            <p className="text-gray-300 mt-1">{animal.name_label || 'Unknown'} • {animal.animal_type} • {animal.sex}</p>
-            <div className="flex flex-wrap gap-4 mt-3 text-sm text-gray-400">
-              <span><Eye className="w-4 h-4 inline mr-1" />{animal.total_sightings} sightings</span>
+            <p className="mt-1 text-slate-600">{animal.name_label || 'Unknown'} • {animal.animal_type} • {animal.sex}</p>
+            <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-500">
+              <span><Eye className="mr-1 inline h-4 w-4" />{animal.total_sightings} sightings</span>
               {animal.last_seen_at && (
-                <span><Clock className="w-4 h-4 inline mr-1" />
-                  Last: {format(parseISO(animal.last_seen_at), 'MMM d, h:mm a')}
+                <span>
+                  <Clock className="mr-1 inline h-4 w-4" />
+                  Last: {formatDateTimeIST(animal.last_seen_at)}
                 </span>
               )}
               {animal.color && <span>🎨 {animal.color}</span>}
@@ -185,118 +183,111 @@ const AnimalDetailPage: FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: prediction + analytics */}
+      <div className="grid gap-6 xl:grid-cols-[0.95fr_1.45fr]">
         <div className="space-y-5">
-          {/* AI Prediction Card */}
-          <div className="prediction-card">
-            <div className="flex items-center gap-2 mb-4">
-              <Brain className="w-5 h-5 text-primary-400" />
-              <h2 className="font-semibold text-white">AI Prediction</h2>
-              <span className="badge-purple text-[10px] ml-auto">
+          <div className="card p-5">
+            <div className="mb-4 flex items-center gap-2">
+              <Brain className="h-5 w-5 text-[#dc2101]" />
+              <h2 className="text-lg font-semibold text-[#081A1A]">AI Prediction</h2>
+              <span className="badge-purple ml-auto text-[10px]">
                 {prediction?.model_name || 'AI'}
               </span>
             </div>
 
             {predLoading && (
-              <div className="text-center py-6">
-                <div className="spinner mx-auto mb-2 w-6 h-6" />
-                <p className="text-gray-400 text-sm">Generating prediction…</p>
+              <div className="py-6 text-center">
+                <div className="spinner mx-auto mb-2 h-6 w-6" />
+                <p className="text-sm text-slate-500">Generating prediction…</p>
               </div>
             )}
 
             {prediction && (
               <div className="space-y-3">
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Likely Location Tomorrow</p>
-                  <p className="text-lg font-bold text-white mt-1 flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-primary-400" />
+                  <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">Likely Location Tomorrow</p>
+                  <p className="mt-1 flex items-center gap-2 text-lg font-bold text-[#081A1A]">
+                    <MapPin className="h-4 w-4 text-[#dc2101]" />
                     {prediction.predicted_zone}
                   </p>
                 </div>
-                <div className="flex gap-3">
-                  <div className="flex-1 bg-dark-700/50 rounded-xl p-3">
-                    <p className="text-xs text-gray-500">Expected Time</p>
-                    <p className="text-sm font-semibold text-white mt-0.5">{prediction.time_start} – {prediction.time_end}</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl bg-[#fffaf5] p-3">
+                    <p className="text-xs font-medium uppercase tracking-[0.12em] text-slate-500">Expected Time</p>
+                    <p className="mt-1 text-sm font-semibold text-[#081A1A]">{prediction.time_start} – {prediction.time_end}</p>
                   </div>
-                  <div className="flex-1 bg-dark-700/50 rounded-xl p-3">
-                    <p className="text-xs text-gray-500">Confidence</p>
-                    <p className={`text-xl font-bold mt-0.5 ${confidenceColor(prediction.confidence)}`}>
+                  <div className="rounded-xl bg-[#fffaf5] p-3">
+                    <p className="text-xs font-medium uppercase tracking-[0.12em] text-slate-500">Confidence</p>
+                    <p className={`mt-1 text-xl font-bold ${confidenceColor(prediction.confidence)}`}>
                       {prediction.confidence_percent}%
                     </p>
                   </div>
                 </div>
-                {/* Confidence bar */}
                 <div>
-                  <div className="confidence-bar">
+                  <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
                     <div
-                      className={`confidence-fill ${confidenceBg(prediction.confidence)}`}
+                      className={`h-full rounded-full ${confidenceBg(prediction.confidence)}`}
                       style={{ width: `${prediction.confidence_percent}%` }}
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">{prediction.confidence_label} confidence</p>
+                  <p className="mt-1 text-xs text-slate-500">{prediction.confidence_label} confidence</p>
                 </div>
 
-                {/* Factors */}
                 {prediction.factors.length > 0 && (
                   <div>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Why this location?</p>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Why this location?</p>
                     <div className="space-y-1.5">
                       {prediction.factors.map((f, i) => (
-                        <div key={i} className="flex items-start gap-2 text-xs text-gray-300">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-primary-400 flex-shrink-0 mt-0.5" />
+                        <div key={i} className="flex items-start gap-2 text-xs text-slate-700">
+                          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#dc2101]" />
                           {f}
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
-                <p className="text-[10px] text-gray-600 mt-2">
-                  Based on {prediction.training_sightings_used} sightings • {format(new Date(prediction.generated_at), 'h:mm a')}
+                <p className="mt-2 text-[10px] text-slate-500">
+                  Based on {prediction.training_sightings_used} sightings • {formatTimeIST(prediction.generated_at)}
                 </p>
-                <p className="text-[10px] text-yellow-600 italic">
+                <p className="text-[10px] italic text-amber-700">
                   ⚠ Predictions are estimates. Actual location may vary.
                 </p>
               </div>
             )}
 
             {predInsufficient && (
-              <div className="text-center py-4">
-                <AlertTriangle className="w-8 h-8 text-orange-400 mx-auto mb-2" />
-                <p className="text-white text-sm font-medium">Insufficient Data</p>
-                <p className="text-gray-400 text-xs mt-1">{predInsufficient.sightings_count} / {predInsufficient.minimum_required} sightings</p>
-                <div className="confidence-bar mt-3">
-                  <div className="confidence-fill bg-orange-500"
-                    style={{ width: `${(predInsufficient.sightings_count / predInsufficient.minimum_required) * 100}%` }} />
+              <div className="py-4 text-center">
+                <AlertTriangle className="mx-auto mb-2 h-8 w-8 text-amber-500" />
+                <p className="text-sm font-medium text-[#081A1A]">Insufficient Data</p>
+                <p className="mt-1 text-xs text-slate-500">{predInsufficient.sightings_count} / {predInsufficient.minimum_required} sightings</p>
+                <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-full rounded-full bg-amber-500" style={{ width: `${(predInsufficient.sightings_count / predInsufficient.minimum_required) * 100}%` }} />
                 </div>
-                <p className="text-gray-500 text-xs mt-2">{predInsufficient.suggestion}</p>
+                <p className="mt-2 text-xs text-slate-500">{predInsufficient.suggestion}</p>
               </div>
             )}
           </div>
 
-          {/* Time-of-day breakdown */}
-          <div className="card">
-            <h3 className="text-sm font-semibold text-white mb-3">Activity Pattern</h3>
+          <div className="card p-5">
+            <h3 className="mb-3 text-sm font-semibold text-[#081A1A]">Activity Pattern</h3>
             {['Morning', 'Afternoon', 'Evening', 'Night'].map((tod) => {
               const count = timeBreakdown[tod] || 0;
               const pct = sightings.length ? (count / sightings.length) * 100 : 0;
               const icons: Record<string, string> = { Morning: '🌅', Afternoon: '☀️', Evening: '🌆', Night: '🌙' };
               return (
-                <div key={tod} className="flex items-center gap-3 mb-2">
-                  <span className="text-sm w-4">{icons[tod]}</span>
-                  <p className="text-xs text-gray-400 w-20">{tod}</p>
-                  <div className="flex-1 confidence-bar">
-                    <div className="confidence-fill bg-primary-500" style={{ width: `${pct}%` }} />
+                <div key={tod} className="mb-2 flex items-center gap-3">
+                  <span className="w-4 text-sm">{icons[tod]}</span>
+                  <p className="w-20 text-xs text-slate-500">{tod}</p>
+                  <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                    <div className="h-full rounded-full bg-[#dc2101]" style={{ width: `${pct}%` }} />
                   </div>
-                  <p className="text-xs text-gray-500 w-8 text-right">{count}</p>
+                  <p className="w-8 text-right text-xs text-slate-500">{count}</p>
                 </div>
               );
             })}
           </div>
 
-          {/* Animal details */}
-          <div className="card">
-            <h3 className="text-sm font-semibold text-white mb-3">Details</h3>
+          <div className="card p-5">
+            <h3 className="mb-3 text-sm font-semibold text-[#081A1A]">Details</h3>
             <div className="space-y-2 text-sm">
               {[
                 ['Type', animal.animal_type],
@@ -307,37 +298,35 @@ const AnimalDetailPage: FC = () => {
                 ['Distinctive', animal.distinctive_features],
                 ['Initial Lat', animal.initial_lat !== undefined && animal.initial_lat !== null ? animal.initial_lat.toFixed(4) : null],
                 ['Initial Lng', animal.initial_lng !== undefined && animal.initial_lng !== null ? animal.initial_lng.toFixed(4) : null],
-                ['Registered On', animal.created_at ? format(parseISO(animal.created_at), 'MMM d, yyyy') : null],
+                ['Registered On', animal.created_at ? formatDateIST(animal.created_at) : null],
               ].filter(([, v]) => v !== null && v !== undefined && v !== '').map(([k, v]) => (
-                <div key={k} className="flex justify-between">
-                  <span className="text-gray-500">{k}</span>
-                  <span className="text-gray-200 font-medium">{String(v)}</span>
+                <div key={k} className="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5">
+                  <span className="text-sm text-slate-500">{k}</span>
+                  <span className="text-right text-sm font-semibold text-[#081A1A]">{String(v)}</span>
                 </div>
               ))}
             </div>
             {animal.notes && (
-              <div className="mt-4 pt-3 border-t border-white/[0.06]">
-                <p className="text-xs font-medium text-gray-400 mb-1">Notes</p>
-                <p className="text-xs text-gray-300 bg-dark-700/50 p-2.5 rounded-lg leading-relaxed">{animal.notes}</p>
+              <div className="mt-4 border-t border-[#efe7df] pt-3">
+                <p className="mb-1 text-xs font-medium uppercase tracking-[0.16em] text-slate-500">Notes</p>
+                <p className="rounded-xl bg-[#fffaf5] p-3 text-xs leading-relaxed text-slate-700">{animal.notes}</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Right: map + sightings */}
-        <div className="lg:col-span-2 space-y-5">
-          {/* Map */}
-          <div className="card p-0 overflow-hidden">
-            <div className="p-4 border-b border-white/[0.06] flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-white">Movement Map</h3>
-              <div className="flex items-center gap-3 text-xs text-gray-500">
-                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-blue-500 inline-block" />Historical</span>
-                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-primary-500 inline-block" />Latest</span>
-                {prediction && <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-purple-500 inline-block" />Predicted</span>}
+        <div className="space-y-5">
+          <div className="card overflow-hidden p-0">
+            <div className="flex items-center justify-between border-b border-[#efe7df] p-4">
+              <h3 className="text-sm font-semibold text-[#081A1A]">Movement Map</h3>
+              <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded-full bg-blue-500" />Historical</span>
+                <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded-full bg-[#dc2101]" />Latest</span>
+                {prediction && <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded-full bg-violet-500" />Predicted</span>}
               </div>
             </div>
-            <div className="h-72">
-              <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="spinner" /></div>}>
+            <div className="min-h-[320px]">
+              <Suspense fallback={<div className="flex h-full min-h-[320px] items-center justify-center"><div className="spinner" /></div>}>
                 <MapComponent
                   sightings={sightings}
                   prediction={prediction || undefined}
@@ -347,28 +336,27 @@ const AnimalDetailPage: FC = () => {
             </div>
           </div>
 
-          {/* Sightings table */}
-          <div className="card p-0 overflow-hidden">
-            <div className="p-4 border-b border-white/[0.06]">
-              <h3 className="text-sm font-semibold text-white">Sighting History ({sightings.length})</h3>
+          <div className="card overflow-hidden p-0">
+            <div className="border-b border-[#efe7df] p-4">
+              <h3 className="text-sm font-semibold text-[#081A1A]">Sighting History ({sightings.length})</h3>
             </div>
-            <div className="overflow-x-auto max-h-72 overflow-y-auto">
-              <table className="w-full">
-                <thead className="sticky top-0 bg-dark-800">
+            <div className="overflow-auto">
+              <table className="min-w-full border-collapse">
+                <thead className="sticky top-0 bg-[#f7f2ee] text-left">
                   <tr>
                     {['Date & Time', 'Location', 'Time of Day', 'Weather', 'Status'].map((h) => (
-                      <th key={h} className="table-header text-left">{h}</th>
+                      <th key={h} className="border-b border-[#efe7df] px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {sightings.map((s) => (
-                    <tr key={s.id} className="table-row">
-                      <td className="table-cell whitespace-nowrap">{format(parseISO(s.timestamp), 'MMM d, h:mm a')}</td>
-                      <td className="table-cell text-xs font-mono">{s.latitude.toFixed(4)}, {s.longitude.toFixed(4)}</td>
-                      <td className="table-cell">{s.time_of_day}</td>
-                      <td className="table-cell">{s.weather_condition || '—'}</td>
-                      <td className="table-cell">
+                    <tr key={s.id} className="transition-colors hover:bg-[#fffaf5]">
+                      <td className="border-b border-[#f1e9e3] px-4 py-3 text-sm text-[#081A1A] whitespace-nowrap">{formatDateTimeIST(s.timestamp)}</td>
+                      <td className="border-b border-[#f1e9e3] px-4 py-3 text-xs font-mono text-slate-700">{s.latitude.toFixed(4)}, {s.longitude.toFixed(4)}</td>
+                      <td className="border-b border-[#f1e9e3] px-4 py-3 text-sm text-slate-700">{s.time_of_day}</td>
+                      <td className="border-b border-[#f1e9e3] px-4 py-3 text-sm text-slate-700">{s.weather_condition || '—'}</td>
+                      <td className="border-b border-[#f1e9e3] px-4 py-3">
                         <span className={
                           s.verification_status === 'Verified' ? 'badge-green' :
                           s.verification_status === 'Rejected' ? 'badge-red' : 'badge-gray'
@@ -377,7 +365,9 @@ const AnimalDetailPage: FC = () => {
                     </tr>
                   ))}
                   {sightings.length === 0 && (
-                    <tr><td colSpan={5} className="table-cell text-center text-gray-500 py-8">No sightings recorded yet</td></tr>
+                    <tr>
+                      <td colSpan={5} className="px-4 py-8 text-center text-sm text-slate-500">No sightings recorded yet</td>
+                    </tr>
                   )}
                 </tbody>
               </table>

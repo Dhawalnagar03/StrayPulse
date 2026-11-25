@@ -2,7 +2,7 @@ import { type FC, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { Sighting, Prediction } from '../types';
-import { format, parseISO } from 'date-fns';
+import { formatDateTimeIST, parseApiDate } from '../lib/date';
 
 interface Props {
   sightings: Sighting[];
@@ -49,7 +49,7 @@ const AnimalMap: FC<Props> = ({ sightings, prediction, animalId, centerLat, cent
 
   // Build polyline path (last 20 sightings in chronological order)
   const pathPoints: [number, number][] = [...sightings]
-    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+    .sort((a, b) => (parseApiDate(a.timestamp)?.getTime() ?? 0) - (parseApiDate(b.timestamp)?.getTime() ?? 0))
     .slice(-20)
     .map((s) => [s.latitude, s.longitude]);
 
@@ -81,7 +81,7 @@ const AnimalMap: FC<Props> = ({ sightings, prediction, animalId, centerLat, cent
           <Popup>
             <div className="text-xs">
               <strong>{animalId}</strong><br />
-              {format(parseISO(s.timestamp), 'MMM d, h:mm a')}<br />
+              {formatDateTimeIST(s.timestamp)}<br />
               {s.time_of_day} · {s.weather_condition || 'N/A'}
               {s.verification_status === 'Verified' && <span className="text-green-400 ml-1">✓</span>}
             </div>
@@ -95,7 +95,7 @@ const AnimalMap: FC<Props> = ({ sightings, prediction, animalId, centerLat, cent
           <Popup>
             <div className="text-xs">
               <strong>Latest Sighting</strong><br />
-              {format(parseISO(sightings[0].timestamp), 'MMM d, h:mm a')}
+              {formatDateTimeIST(sightings[0].timestamp)}
             </div>
           </Popup>
         </Marker>

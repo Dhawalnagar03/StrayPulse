@@ -6,9 +6,9 @@ class ApiService {
   late final Dio _dio;
 
   static const String _baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8000/api', // Android emulator → localhost
-  );
+  'API_BASE_URL',
+  defaultValue: 'http://localhost:8000/api',
+);
 
   ApiService._() {
     _dio = Dio(BaseOptions(
@@ -96,7 +96,7 @@ class ApiService {
 
   // ── Sightings ─────────────────────────────────────────────────────────────
   Future<Map<String, dynamic>> submitSighting(Map<String, dynamic> data) async {
-    final res = await _dio.post('/sightings/', data: data);
+    final res = await _dio.post('/sightings', data: data);
     return Map<String, dynamic>.from(res.data);
   }
 

@@ -7,7 +7,7 @@ from app.config import settings
 from app.database.connection import get_database
 import bcrypt
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
 def hash_password(password: str) -> str:
     pwd_bytes = password.encode('utf-8')[:72]

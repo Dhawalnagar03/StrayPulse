@@ -42,3 +42,13 @@ dist/
 *.jks
 *.keystore
 google-services.json
+
+# Additional Python virtual environments
+backend/.venv312_repair/
+
+# Python test and cache files
+.coverage
+htmlcov/
+
+# Local ML experiment files
+ml/experiments/

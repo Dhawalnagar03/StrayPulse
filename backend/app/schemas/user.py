@@ -12,6 +12,9 @@ class UserRegisterRequest(BaseModel):
     password: str = Field(..., min_length=8)
     phone: Optional[str] = None
     role: UserRole = UserRole.CITIZEN
+    profile_type: Optional[str] = Field(default=None, description="Participant category: individual, ngo, rescuer, volunteer, feeder")
+    organization_name: Optional[str] = None
+    organization_details: Optional[str] = None
 
 
 class UserLoginRequest(BaseModel):
@@ -25,6 +28,8 @@ class TokenResponse(BaseModel):
     user_id: str
     role: str
     name: str
+    profile_type: Optional[str] = None
+    organization_name: Optional[str] = None
 
 
 class UserPublicResponse(BaseModel):
@@ -33,6 +38,8 @@ class UserPublicResponse(BaseModel):
     email: str
     phone: Optional[str] = None
     role: UserRole
+    profile_type: Optional[str] = None
+    organization_name: Optional[str] = None
     is_active: bool
     total_sightings: int
     created_at: datetime

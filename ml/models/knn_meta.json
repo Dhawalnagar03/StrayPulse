@@ -1,12 +1,12 @@
 {
   "model_name": "knn",
   "version": "1.0",
-  "training_date": "2026-09-10T07:17:20.949739",
+  "training_date": "2026-11-10T05:05:32.878814",
   "training_samples": 1050,
-  "accuracy": 0.7452471482889734,
-  "precision": 0.592735696392817,
-  "recall": 0.5779110704110704,
-  "f1_score": 0.5490329917375952,
+  "accuracy": 0.7566539923954373,
+  "precision": 0.6091608854108854,
+  "recall": 0.5822893772893772,
+  "f1_score": 0.5648687052879442,
   "features": [
     "hour",
     "day_of_week",

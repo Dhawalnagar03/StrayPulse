@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     APP_NAME: str = "StrayPulse API"
     APP_VERSION: str = "1.0.0"
     ENVIRONMENT: str = "development"
+    BACKEND_HOST: str = "0.0.0.0"
+    BACKEND_PORT: int = 8000
 
     # MongoDB
     MONGODB_URI: str = "mongodb://localhost:27017"
@@ -27,9 +29,8 @@ class Settings(BaseSettings):
     OPENWEATHER_BASE_URL: str = "https://api.openweathermap.org/data/2.5"
 
     # CORS
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://localhost:8080"
 
-    # File upload
     UPLOAD_DIR: str = "./uploads"
     MAX_UPLOAD_SIZE_MB: int = 10
 
@@ -47,9 +48,11 @@ class Settings(BaseSettings):
     # Notifications
     NOTIFICATION_CONFIDENCE_THRESHOLD: float = 0.70
 
-    # Admin seed
+    # Demo seed
     ADMIN_EMAIL: str = "admin@straypulse.org"
     ADMIN_PASSWORD: str = "Admin@StrayPulse2026!"
+    CITIZEN_DEMO_EMAIL: str = "citizen@demo.com"
+    CITIZEN_DEMO_PASSWORD: str = "Demo@1234!"
 
     @property
     def cors_origins_list(self) -> List[str]:

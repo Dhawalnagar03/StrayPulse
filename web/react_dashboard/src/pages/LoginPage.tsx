@@ -20,8 +20,18 @@ const LoginPage: FC = () => {
     setLoading(true);
     try {
       const res = await authApi.login(email, password);
-      const { access_token, user_id, role, name } = res.data;
-      login(access_token, { id: user_id, name, email, role, is_active: true, total_sightings: 0, created_at: '' });
+      const { access_token, user_id, role, name, profile_type, organization_name } = res.data;
+      login(access_token, {
+        id: user_id,
+        name,
+        email,
+        role,
+        profile_type,
+        organization_name,
+        is_active: true,
+        total_sightings: 0,
+        created_at: '',
+      });
       toast.success(`Welcome back, ${name}!`);
       navigate('/dashboard');
     } catch (err: any) {
@@ -35,41 +45,28 @@ const LoginPage: FC = () => {
     }
   };
 
-  const fillDemo = (role: 'admin' | 'citizen') => {
-    if (role === 'admin') {
-      setEmail('admin@straypulse.org');
-      setPassword('Admin@StrayPulse2026!');
-    } else {
-      setEmail('citizen@demo.com');
-      setPassword('Demo@1234!');
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-dark-900 flex items-center justify-center p-4">
-      {/* Glow background */}
+    <div className="auth-shell min-h-screen flex items-center justify-center p-4">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-primary-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 left-1/3 w-[400px] h-[300px] bg-accent-blue/5 rounded-full blur-3xl" />
+        <div className="auth-shell-glow auth-shell-glow-one absolute left-1/2 top-1/4 h-[360px] w-[560px] -translate-x-1/2 rounded-full blur-3xl" />
+        <div className="auth-shell-glow auth-shell-glow-two absolute bottom-1/4 left-1/3 h-[260px] w-[380px] rounded-full blur-3xl" />
       </div>
 
-      <div className="w-full max-w-md relative z-10">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-primary-600 flex items-center justify-center mx-auto mb-4 shadow-glow-green">
-            <PawPrint className="w-8 h-8 text-white" />
+      <div className="relative z-10 w-full max-w-md">
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#081a1a] shadow-[0_12px_35px_rgba(8,26,26,0.22)]">
+            <PawPrint className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Welcome to StrayPulse</h1>
-          <p className="text-gray-400 mt-1 text-sm">AI-Powered Stray Animal Location Prediction</p>
+          <h1 className="auth-shell-heading text-2xl font-bold">Welcome to StrayPulse</h1>
+          <p className="auth-shell-subtitle mt-1 text-sm">AI-powered stray animal welfare intelligence</p>
         </div>
 
-        {/* Card */}
-        <div className="card-glass">
-          <h2 className="text-lg font-semibold text-white mb-6">Sign In</h2>
+        <div className="auth-shell-card rounded-[28px] border p-6 shadow-[0_18px_40px_rgba(8,26,26,0.06)] sm:p-7">
+          <h2 className="auth-shell-heading mb-6 text-lg font-semibold">Sign In</h2>
 
           {error && (
-            <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl px-4 py-3 mb-4">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
               {error}
             </div>
           )}
@@ -104,9 +101,9 @@ const LoginPage: FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowPw(!showPw)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700"
                 >
-                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
@@ -114,28 +111,15 @@ const LoginPage: FC = () => {
               id="btn-login"
               type="submit"
               disabled={loading}
-              className="btn-primary w-full justify-center text-base py-3"
+              className="btn-primary w-full justify-center py-3 text-base"
             >
-              {loading ? <span className="spinner w-4 h-4 border border-white/30 border-t-white" /> : 'Sign In'}
+              {loading ? <span className="spinner h-4 w-4 border border-white/30 border-t-white" /> : 'Sign In'}
             </button>
           </form>
 
-          {/* Demo buttons */}
-          <div className="mt-5 pt-4 border-t border-white/[0.06]">
-            <p className="text-xs text-gray-500 text-center mb-3">Quick Demo Access</p>
-            <div className="flex gap-2">
-              <button onClick={() => fillDemo('admin')} className="btn-secondary flex-1 justify-center text-xs py-2">
-                Admin Demo
-              </button>
-              <button onClick={() => fillDemo('citizen')} className="btn-secondary flex-1 justify-center text-xs py-2">
-                Citizen Demo
-              </button>
-            </div>
-          </div>
-
-          <p className="mt-4 text-center text-sm text-gray-500">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-primary-400 hover:text-primary-300 font-medium">
+          <p className="auth-shell-copy mt-4 text-center text-sm">
+            Don&apos;t have an account?{' '}
+            <Link to="/register" className="font-medium text-[#dc2101] hover:text-[#b51d00]">
               Sign up
             </Link>
           </p>

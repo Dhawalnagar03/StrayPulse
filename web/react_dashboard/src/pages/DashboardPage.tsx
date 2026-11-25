@@ -1,45 +1,17 @@
-import { useEffect, type FC } from 'react';
+import { type FC } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  PawPrint, Eye, Target, TrendingUp, MapPin,
-  Calendar, Brain, AlertTriangle
-} from 'lucide-react';
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  LineChart, Line, PieChart, Pie, Cell, AreaChart, Area
-} from 'recharts';
-import { adminApi, animalsApi, predictionsApi } from '../lib/api';
+import { Activity, ArrowUpRight, CalendarRange, Eye, MapPinned, PawPrint, Sparkles, TrendingUp, Users } from 'lucide-react';
+import { adminApi, animalsApi, predictionsApi, sightingsApi } from '../lib/api';
 import { useAuthStore } from '../store/auth';
-import type { Analytics } from '../types';
-import { format } from 'date-fns';
+import type { Analytics, Animal, Prediction, Sighting } from '../types';
+import { formatDateTimeIST, formatDayOnlyIST, getGreetingByIst } from '../lib/date';
+import GlobalMap from '../components/GlobalMap';
 
-const CHART_COLORS = ['#22c55e', '#3b82f6', '#8b5cf6', '#f97316', '#ec4899', '#14b8a6'];
-
-const StatCard: FC<{ label: string; value: string | number; icon: any; color?: string; sub?: string }> = ({
-  label, value, icon: Icon, color = 'text-primary-400', sub
-}) => (
-  <div className="stat-card">
-    <div className="flex items-center justify-between mb-3">
-      <p className="stat-label">{label}</p>
-      <div className={`w-9 h-9 rounded-xl bg-white/[0.04] flex items-center justify-center ${color}`}>
-        <Icon className="w-4 h-4" />
-      </div>
-    </div>
-    <p className="stat-value">{value.toLocaleString()}</p>
-    {sub && <p className="text-xs text-gray-500 mt-1">{sub}</p>}
-  </div>
-);
-
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload?.length) {
-    return (
-      <div className="bg-dark-700 border border-white/[0.08] rounded-xl px-3 py-2 text-sm">
-        <p className="text-gray-400 text-xs mb-1">{label}</p>
-        <p className="text-white font-semibold">{payload[0].value}</p>
-      </div>
-    );
-  }
-  return null;
+const statAccent = {
+  blue: 'bg-blue-50 text-blue-700',
+  emerald: 'bg-emerald-50 text-emerald-700',
+  violet: 'bg-violet-50 text-violet-700',
+  amber: 'bg-amber-50 text-amber-700',
 };
 
 const DashboardPage: FC = () => {
@@ -53,201 +25,221 @@ const DashboardPage: FC = () => {
     refetchInterval: 30000,
   });
 
-  const { data: countData } = useQuery({
-    queryKey: ['animals-count'],
-    queryFn: () => animalsApi.count().then((r) => r.data),
-  });
-
-  const { data: animals = [] } = useQuery({
+  const { data: animals = [] } = useQuery<Animal[]>({
     queryKey: ['animals-dashboard'],
     queryFn: () => animalsApi.list({ limit: 5 }).then((r) => r.data),
   });
 
-  const { data: predictions = [] } = useQuery({
+  const { data: nearbySightings = [] } = useQuery<Sighting[]>({
+    queryKey: ['nearby-dashboard'],
+    queryFn: () => sightingsApi.getNearby(12.9716, 77.5946, 8).then((r) => r.data),
+  });
+
+  const { data: predictions = [] } = useQuery<Prediction[]>({
     queryKey: ['predictions-dashboard'],
     queryFn: () => predictionsApi.list(0.6).then((r) => r.data),
   });
 
-  // Convert sightings_by_day to chart format
-  const dayData = analytics
-    ? Object.entries(analytics.sightings_by_day).map(([day, count]) => ({ day, count }))
-    : [];
+  const metrics = analytics
+    ? [
+        { label: 'Registered animals', value: analytics.total_animals, icon: PawPrint, tone: 'blue' },
+        { label: 'Active animals', value: analytics.active_animals, icon: Activity, tone: 'emerald' },
+        { label: "Today's sightings", value: analytics.todays_sightings, icon: CalendarRange, tone: 'amber' },
+        { label: 'Predictions', value: analytics.predictions_generated, icon: Sparkles, tone: 'violet' },
+      ]
+    : [
+        { label: 'Registered animals', value: animals.length, icon: PawPrint, tone: 'blue' },
+        { label: 'AI predictions', value: predictions.length, icon: Sparkles, tone: 'violet' },
+        { label: 'Today', value: formatDayOnlyIST(new Date()), icon: CalendarRange, tone: 'amber' },
+        { label: 'Reports', value: nearbySightings.length, icon: Eye, tone: 'emerald' },
+      ];
 
-  const hourData = analytics
-    ? Object.entries(analytics.sightings_by_hour)
-        .sort(([a], [b]) => Number(a) - Number(b))
-        .map(([h, count]) => ({ hour: `${h}:00`, count }))
-    : [];
+  const mapCenter: [number, number] = nearbySightings[0]
+    ? [nearbySightings[0].latitude, nearbySightings[0].longitude]
+    : [12.9716, 77.5946];
 
-  const pieData = analytics
-    ? Object.entries(analytics.animal_distribution).map(([type, count], i) => ({
-        name: type, value: count, fill: CHART_COLORS[i % CHART_COLORS.length]
-      }))
-    : [];
+  const recentSightings = nearbySightings.slice(0, 4);
+  const recentAnimals = animals.slice(0, 4);
 
   if (analyticsLoading && isAdmin) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className="spinner mx-auto mb-4" />
-          <p className="text-gray-400">Loading analytics...</p>
-        </div>
+      <div className="flex min-h-[240px] items-center justify-center">
+        <div className="spinner" />
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">
-            Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'},{' '}
-            <span className="text-primary-400">{user?.name?.split(' ')[0]}</span> 👋
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-600">Operations</p>
+          <h1 className="mt-1 text-3xl font-bold text-slate-900">
+            Good {getGreetingByIst(new Date())}, {user?.name?.split(' ')[0] || 'there'}
           </h1>
-          <p className="text-gray-400 text-sm mt-1">{format(new Date(), 'EEEE, MMMM do yyyy')}</p>
         </div>
-        <div className="badge-green">
-          <span className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse-slow" />
-          System Active
+        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700">
+          <span className="h-2 w-2 rounded-full bg-emerald-500" />
+          Live system active
         </div>
       </div>
 
-      {/* Stats grid */}
-      {isAdmin && analytics ? (
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          <StatCard label="Total Animals" value={analytics.total_animals} icon={PawPrint} color="text-primary-400" />
-          <StatCard label="Total Sightings" value={analytics.total_sightings} icon={Eye} color="text-blue-400" />
-          <StatCard label="Active Animals" value={analytics.active_animals} icon={Target} color="text-green-400" />
-          <StatCard label="Today's Reports" value={analytics.todays_sightings} icon={Calendar} color="text-orange-400" />
-          <StatCard label="Predictions" value={analytics.predictions_generated} icon={Brain} color="text-purple-400" />
-          <StatCard label="High Confidence" value={analytics.high_confidence_predictions} icon={TrendingUp} color="text-teal-400" sub="≥70% confidence" />
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard label="Animals Registered" value={countData?.count ?? animals.length} icon={PawPrint} />
-          <StatCard label="High Conf. Predictions" value={predictions.length} icon={Brain} color="text-purple-400" />
-          <StatCard label="Today" value={format(new Date(), 'MMM d')} icon={Calendar} color="text-orange-400" />
-          <StatCard label="Your Sightings" value={user?.total_sightings ?? 0} icon={Eye} color="text-blue-400" />
-        </div>
-      )}
-
-      {/* Charts row */}
-      {isAdmin && analytics && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Sightings by day */}
-          <div className="card lg:col-span-2">
-            <h3 className="text-sm font-semibold text-white mb-4">Sightings by Day of Week</h3>
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={dayData}>
-                <XAxis dataKey="day" tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="count" fill="#22c55e" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {metrics.map(({ label, value, icon: Icon, tone }) => (
+          <div key={label} className="card p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-sm font-medium text-slate-500">{label}</span>
+              <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${statAccent[tone as keyof typeof statAccent]}`}>
+                <Icon className="h-5 w-5" />
+              </span>
+            </div>
+            <p className="text-3xl font-bold text-slate-900">{value}</p>
           </div>
+        ))}
+      </div>
 
-          {/* Animal distribution pie */}
-          <div className="card">
-            <h3 className="text-sm font-semibold text-white mb-4">Animal Distribution</h3>
-            <ResponsiveContainer width="100%" height={180}>
-              <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
-                  {pieData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
+      <div className="grid gap-6 xl:grid-cols-[1.7fr_1fr]">
+        <div className="card overflow-hidden p-0">
+          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Map preview</h2>
+              <p className="text-sm text-slate-500">Current sightings and predicted zones</p>
+            </div>
+            <a href="/map" className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700">
+              Open explorer <ArrowUpRight className="h-4 w-4" />
+            </a>
+          </div>
+          <div className="h-[330px] w-full">
+            <GlobalMap
+              sightings={nearbySightings}
+              feeding={[]}
+              predictions={predictions.slice(0, 6)}
+              center={mapCenter}
+            />
           </div>
         </div>
-      )}
 
-      {/* Sightings by hour */}
-      {isAdmin && analytics && hourData.length > 0 && (
-        <div className="card">
-          <h3 className="text-sm font-semibold text-white mb-4">Sightings by Hour of Day</h3>
-          <ResponsiveContainer width="100%" height={160}>
-            <AreaChart data={hourData}>
-              <defs>
-                <linearGradient id="hourGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="hour" tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} interval={2} />
-              <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="count" stroke="#22c55e" strokeWidth={2} fill="url(#hourGrad)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      {/* Recent animals + predictions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent animals */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-white">Recent Animals</h3>
-            <a href="/animals" className="text-xs text-primary-400 hover:text-primary-300">View all →</a>
+        <div className="card p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-slate-900">Recent sightings</h2>
+            <a href="/sightings" className="text-sm font-medium text-blue-600 hover:text-blue-700">View all</a>
           </div>
           <div className="space-y-3">
-            {animals.slice(0, 5).map((a: any) => (
-              <a key={a.animal_id} href={`/animals/${a.animal_id}`} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/[0.04] transition-colors">
-                <div className="w-9 h-9 rounded-xl bg-dark-700 border border-white/[0.08] flex items-center justify-center text-primary-400 font-bold text-xs overflow-hidden flex-shrink-0">
-                  {a.primary_photo ? (
-                    <img src={a.primary_photo} alt={a.animal_id} className="w-full h-full object-cover" />
-                  ) : (
-                    a.animal_type[0]
-                  )}
+            {recentSightings.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-500">No sightings reported in the recent radius.</div>
+            ) : (
+              recentSightings.map((sighting) => (
+                <div key={sighting.id} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                  <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
+                    {sighting.photo_url ? (
+                      <img src={sighting.photo_url} alt={sighting.animal_id} className="h-full w-full object-cover" />
+                    ) : (
+                      <PawPrint className="h-5 w-5 text-blue-600" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="truncate text-sm font-semibold text-slate-900">{sighting.animal_id}</p>
+                      <span className={sighting.verification_status === 'Verified' ? 'badge-green' : sighting.verification_status === 'Pending' ? 'badge-orange' : 'badge-gray'}>
+                        {sighting.verification_status}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">{sighting.zone_name || 'Urban zone'} • {formatDateTimeIST(sighting.timestamp)}</p>
+                    <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-500">
+                      <MapPinned className="h-3.5 w-3.5" />
+                      {sighting.latitude.toFixed(4)}, {sighting.longitude.toFixed(4)}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{a.animal_id}</p>
-                  <p className="text-xs text-gray-500">{a.name_label || a.animal_type} • {a.total_sightings} sightings</p>
-                </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${a.status === 'Active' ? 'badge-green' : 'badge-gray'}`}>
-                  {a.status === 'Active' ? '🟢' : '⚫'} {a.status}
-                </span>
-              </a>
-            ))}
-            {animals.length === 0 && <p className="text-center text-gray-500 text-sm py-4">No animals yet. Seed demo data first.</p>}
-          </div>
-        </div>
-
-        {/* High-confidence predictions */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-white">High-Confidence Predictions</h3>
-            <span className="badge-purple"><Brain className="w-3 h-3" /> AI</span>
-          </div>
-          <div className="space-y-3">
-            {predictions.filter((p: any) => p.confidence >= 0.6).slice(0, 4).map((p: any) => (
-              <a key={`${p.animal_id}-${p.generated_at}`} href={`/animals/${p.animal_id}`}
-                className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/[0.04] transition-colors">
-                <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
-                  <Brain className="w-4 h-4 text-purple-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white">{p.animal_id}</p>
-                  <p className="text-xs text-gray-500 truncate">{p.predicted_zone} · {p.time_start}–{p.time_end}</p>
-                </div>
-                <div className="text-right">
-                  <p className={`text-sm font-bold ${p.confidence >= 0.75 ? 'text-primary-400' : 'text-orange-400'}`}>
-                    {p.confidence_percent}%
-                  </p>
-                  <p className="text-[10px] text-gray-500">{p.confidence_label}</p>
-                </div>
-              </a>
-            ))}
-            {predictions.length === 0 && (
-              <div className="text-center py-4">
-                <Brain className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                <p className="text-gray-500 text-sm">No predictions yet</p>
-                <p className="text-gray-600 text-xs">Visit an animal profile to generate a prediction</p>
-              </div>
+              ))
             )}
           </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="card p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-slate-900">Animal type distribution</h2>
+            <span className="text-sm text-slate-500">Live data</span>
+          </div>
+          {analytics ? (
+            <div className="h-[220px]">
+              <div className="flex h-full items-center justify-center">
+                <div className="flex flex-col gap-3 w-full max-w-md">
+                  {Object.entries(analytics.animal_distribution).map(([label, value], index) => (
+                    <div key={label}>
+                      <div className="mb-1 flex items-center justify-between text-sm">
+                        <span className="font-medium text-slate-700">{label}</span>
+                        <span className="text-slate-500">{value}</span>
+                      </div>
+                      <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${Math.max((value / (Object.values(analytics.animal_distribution).reduce((sum, item) => sum + item, 0) || 1)) * 100, 10)}%`,
+                            background: ['#2563eb', '#14b8a6', '#7c3aed', '#f59e0b', '#f472b6'][index % 5],
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">Distribution will appear once analytics data is available.</div>
+          )}
+        </div>
+
+        <div className="card p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-slate-900">Recently added animals</h2>
+            <a href="/animals" className="text-sm font-medium text-blue-600 hover:text-blue-700">Open</a>
+          </div>
+          <div className="space-y-3">
+            {recentAnimals.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-500">No animals have been registered yet.</div>
+            ) : (
+              recentAnimals.map((animal) => (
+                <a key={animal.animal_id} href={`/animals/${animal.animal_id}`} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 transition-colors hover:border-blue-200 hover:bg-blue-50/40">
+                  <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
+                    {animal.primary_photo ? (
+                      <img src={animal.primary_photo} alt={animal.animal_id} className="h-full w-full object-cover" />
+                    ) : (
+                      <PawPrint className="h-5 w-5 text-blue-600" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-slate-900">{animal.name_label || animal.animal_id}</p>
+                    <p className="text-xs text-slate-500">{animal.animal_type} • {animal.sex}</p>
+                  </div>
+                  <span className={animal.status === 'Active' ? 'badge-green' : 'badge-gray'}>{animal.status}</span>
+                </a>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="card p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-slate-900">Quick actions</h2>
+          <TrendingUp className="h-5 w-5 text-blue-600" />
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <a href="/sightings/new" className="rounded-2xl border border-blue-200 bg-blue-50 p-4 transition-colors hover:bg-blue-100/80">
+            <p className="text-sm font-semibold text-blue-800">Report sighting</p>
+            <p className="mt-1 text-sm text-blue-700">Capture location and photo of a live animal.</p>
+          </a>
+          <a href="/map" className="rounded-2xl border border-violet-200 bg-violet-50 p-4 transition-colors hover:bg-violet-100/80">
+            <p className="text-sm font-semibold text-violet-800">Explore map</p>
+            <p className="mt-1 text-sm text-violet-700">Review nearby sightings, feeding points, and prediction zones.</p>
+          </a>
+          <a href="/animals" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 transition-colors hover:bg-emerald-100/80">
+            <p className="text-sm font-semibold text-emerald-800">Manage animals</p>
+            <p className="mt-1 text-sm text-emerald-700">Review health, movement history, and recent updates.</p>
+          </a>
         </div>
       </div>
     </div>

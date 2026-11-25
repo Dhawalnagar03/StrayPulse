@@ -6,9 +6,13 @@ from enum import Enum
 
 
 class UserRole(str, Enum):
-    CITIZEN = "citizen"
-    NGO = "ngo"
     ADMIN = "admin"
+    CITIZEN = "citizen"
+    INDIVIDUAL = "individual"
+    NGO = "ngo"
+    RESCUER = "rescuer"
+    VOLUNTEER = "volunteer"
+    FEEDER = "feeder"
 
 
 class UserModel(MongoBaseModel):
@@ -17,6 +21,9 @@ class UserModel(MongoBaseModel):
     phone: Optional[str] = None
     hashed_password: str
     role: UserRole = UserRole.CITIZEN
+    profile_type: Optional[str] = None
+    organization_name: Optional[str] = None
+    organization_details: Optional[str] = None
     is_active: bool = True
     is_verified: bool = False
     profile_photo: Optional[str] = None
